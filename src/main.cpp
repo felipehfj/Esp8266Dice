@@ -1,4 +1,6 @@
 #include <Arduino.h>
+#include <BfButton.h>
+#include <NoDelay.h>
 
 #define INITIAL_VALUE 0x0
 #define LIMITS_MIN 0x0
@@ -10,21 +12,33 @@
 #define DELAY_SCROLL_250 250
 #define DELAY_SCROLL_500 500
 
-
 #define PIN_BTN 4
 #define PIN_A 13
 #define PIN_B 12
 #define PIN_C 14
 #define PIN_D 16
 
+unsigned int MODE = 0; // 0 = manual, 1 = auto
+
+BfButton btn(BfButton::STANDALONE_DIGITAL, PIN_BTN);
+
 void show_number(int value);
 int generate_random_number_between(int min, int max);
 void roll_dice();
 void scroll_numbers(int value);
+void auto_random_dice();
+void set_mode(unsigned int mode);
+void pressHandler(BfButton *btn, BfButton::press_pattern_t pattern);
+
+noDelay auto_mode_time(DELAY_BETWEEN_ROLLS, auto_random_dice);
 
 void setup()
 {
   Serial.begin(115200);
+  while (!Serial)
+    ;
+  Serial.println();
+
   pinMode(PIN_A, OUTPUT);
   pinMode(PIN_B, OUTPUT);
   pinMode(PIN_C, OUTPUT);
@@ -33,19 +47,20 @@ void setup()
   pinMode(PIN_BTN, INPUT_PULLUP);
 
   show_number(INITIAL_VALUE);
+
+  btn.onPress(pressHandler)
+      .onDoublePress(pressHandler)     // default timeout
+      .onPressFor(pressHandler, 1000); // custom timeout for 1 second
+
   Serial.println("Dice initialized!!!");
   Serial.println("Press the button to roll the dice.");
 }
 
 void loop()
 {
-
-  if (digitalRead(PIN_BTN) == LOW)
-  {
-    roll_dice();
-    delay(DELAY_BETWEEN_ROLLS);
-    Serial.println("Press the button to roll the dice.");
-  }
+  btn.read();
+  auto_mode_time.update();
+  
 }
 
 void show_number(int value)
@@ -87,7 +102,7 @@ void roll_dice()
 }
 
 void scroll_numbers(int value)
-{  
+{
   for (int i = INITIAL_VALUE; i <= LIMITS_MAX; i++)
   {
     show_number(i);
@@ -111,10 +126,43 @@ void scroll_numbers(int value)
     show_number(i);
     delay(DELAY_SCROLL_250);
   }
-  
+
   for (int i = INITIAL_VALUE; i <= value; i++)
   {
     show_number(i);
     delay(DELAY_SCROLL_500);
   }
+}
+
+void auto_random_dice()
+{
+  int value = generate_random_number_between(LIMITS_MIN, LIMITS_MAX);
+  Serial.println("Dice value: " + String(value));
+  show_number(value);
+}
+
+void pressHandler(BfButton *btn, BfButton::press_pattern_t pattern)
+{  
+  switch (pattern)
+  {
+  case BfButton::SINGLE_PRESS:    
+    roll_dice();
+    Serial.println("Press the button to roll the dice.");
+    break;
+  case BfButton::DOUBLE_PRESS:
+    Serial.println("Manual mode selected.");
+    set_mode(0);
+    auto_mode_time.stop();    
+    break;
+  case BfButton::LONG_PRESS:
+    Serial.println("Auto mode selected.");    
+    set_mode(1);
+    auto_mode_time.start();
+    break;
+  }
+}
+
+void set_mode(unsigned int mode)
+{
+  MODE = mode;
 }
