@@ -1,6 +1,7 @@
-# Projeto C++: Scroll Numbers
+# Projeto C++: Scroll Numbers para ESP8266 e Arduino
 
-Este projeto é um programa simples em C++ que exibe uma sequência de números com diferentes velocidades de rolagem.
+Este projeto é um programa simples em C++ que exibe uma sequência de números com diferentes velocidades de rolagem. Ele foi desenvolvido para ser utilizado na plataforma `Espressif ESP8266` utilizando o framework `Arduino`.
+A codoficação foi feita utilizando o Platformio.
 
 ## Função `scroll_numbers`
 
